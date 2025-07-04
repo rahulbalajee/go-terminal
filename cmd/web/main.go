@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -28,8 +28,7 @@ type config struct {
 
 type application struct {
 	config        config
-	infoLog       *log.Logger
-	errorLog      *log.Logger
+	logger        *slog.Logger
 	templateCache map[string]*template.Template
 	version       string
 }
@@ -44,7 +43,10 @@ func (app *application) serve() error {
 		WriteTimeout:      5 * time.Second,
 	}
 
-	app.infoLog.Printf("starting HTTP server in %s mode on port %d", app.config.env, app.config.port)
+	app.logger.Info("starting HTTP server",
+		"env", app.config.env,
+		"port", app.config.port,
+		"version", app.version)
 
 	return srv.ListenAndServe()
 }
@@ -61,23 +63,20 @@ func main() {
 	cfg.stripe.key = os.Getenv("STRIPE_KEY")
 	cfg.stripe.secret = os.Getenv("STRIPE_SECRET")
 
-	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	tc := make(map[string]*template.Template)
 
 	app := &application{
 		config:        cfg,
-		infoLog:       infoLog,
-		errorLog:      errorLog,
+		logger:        logger,
 		templateCache: tc,
 		version:       version,
 	}
 
 	err := app.serve()
 	if err != nil {
-		app.errorLog.Println(err)
-		log.Fatal(err)
+		app.logger.Error(err.Error())
+		os.Exit(1)
 	}
-
 }
