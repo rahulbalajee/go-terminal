@@ -49,8 +49,42 @@
 {{define "js"}}
     <script src="https://js.stripe.com/v3/"></script>
     <script>
+    let card;
+    let stripe;
+    const cardMessages = document.getElementById("card-messages");
+    const 
+
+    stripe = Stripe('test');
+
     function val() {
 
     }
+
+    (function() {
+        const elements = stripe.elements();
+        const style = {
+            base: {
+                fontSize: '16px',
+                lineHeight: '24px',
+                }
+            };
+
+            card = elements.create('card', {
+                style: style,
+                hidePostalCode: true,
+            });
+            card.mount("#card-element");
+
+            card.addEventListener('change', function(event) {
+                var displayError = document.getElementById('card-errors');
+                if (event.error) {
+                    displayError.classList.remove('d-none');
+                    displayError.textContent = event.error.message;
+                } else {
+                    displayError.classList.add('d-none');
+                    displayError.textContent = '';
+                }
+            });
+    })();
     </script>
 {{end}}
